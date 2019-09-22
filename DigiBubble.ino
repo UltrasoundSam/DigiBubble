@@ -27,8 +27,19 @@ struct orient {
 const float radtoang = 180 / 3.14159265;
 const int numaves = 16;
 struct orient level;
-float total_pitch;
-float total_dist;
+
+// Define variables to store values
+int distance[numaves];
+float roll[numaves];
+float pitch[numaves];
+float outputs[3];
+int tot_dist = 0;
+float tot_pitch = 0;
+float tot_roll = 0;
+float ave_pitch;
+float ave_roll;
+float ave_dist;
+int readIndex;
 
 void setup(void) {
 #ifndef ESP8266
@@ -51,7 +62,13 @@ void setup(void) {
   IRToF.init();
   IRToF.setTimeout(500);
   IRToF.setMeasurementTimingBudget(2000);
-  
+
+  // Initialise all measurements to zero
+  for (int thisReading = 0; thisReading < numaves; thisReading++) {
+    distance[thisReading] = 0;
+    roll[thisReading] = 0;
+    pitch[thisReading] = 0;
+  }
 }
 
 // Function for turning data into pitch and roll values
@@ -68,20 +85,35 @@ void loop() {
   /* Get a new sensor event, normalized */ 
   sensors_event_t event; 
   lis.getEvent(&event);
+  level = alignments(event.acceleration.x, event.acceleration.y, event.acceleration.z);
   
-  total_pitch = 0;
-  total_dist = 0;
-  for (int i = 0; i < numaves; i++){
-    level = alignments(event.acceleration.x, event.acceleration.y, event.acceleration.z);
-    total_pitch += level.pitch;
-    total_dist += IRToF.readRangeSingleMillimeters();
-    delay(50);
+  // Update Orientation values
+  tot_pitch = tot_pitch - pitch[readIndex];
+  pitch[readIndex] = level.pitch;
+  tot_pitch = tot_pitch + pitch[readIndex];
+  tot_roll = tot_roll - roll[readIndex];
+  roll[readIndex] = level.roll;
+  tot_roll = tot_roll + roll[readIndex];
+
+  // Re-calculate Averages of orientation
+  ave_pitch = tot_pitch / numaves;
+  ave_roll = tot_roll / numaves;
+
+  // Update distance measurement
+  tot_dist = tot_dist - distance[readIndex];
+  distance[readIndex] = IRToF.readRangeSingleMillimeters();
+  tot_dist = tot_dist + distance[readIndex];
+  ave_dist = tot_dist / numaves;
+
+  // If we're at end of array, roll back round
+  if (readIndex >= numaves) {
+    readIndex = 0;
   }
-  total_pitch /= numaves;
-  total_dist /= numaves;
-  Serial.print(" \tRoll: "); Serial.print(total_pitch);
-  Serial.print(" \tDist: "); Serial.println(total_dist);
+  outputs[0] = ave_dist;
+  outputs[1] = ave_pitch;
+  outputs[2] = ave_roll;
+  delay(100);
+  Serial.print(" \tRoll: "); Serial.print(ave_roll);
+  Serial.print(" \tDist: "); Serial.println(ave_dist);
   Serial.println();
- 
-   
 }
