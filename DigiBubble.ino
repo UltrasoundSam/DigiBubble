@@ -33,7 +33,7 @@ int distance[numaves];
 float roll[numaves];
 float pitch[numaves];
 float outputs[3];
-int tot_dist = 0;
+float tot_dist = 0;
 float tot_pitch = 0;
 float tot_roll = 0;
 float ave_pitch;
@@ -105,6 +105,8 @@ void loop() {
   tot_dist = tot_dist + distance[readIndex];
   ave_dist = tot_dist / numaves;
 
+  // Now advance the counter
+  readIndex ++;
   // If we're at end of array, roll back round
   if (readIndex >= numaves) {
     readIndex = 0;
@@ -113,7 +115,7 @@ void loop() {
   outputs[1] = ave_pitch;
   outputs[2] = ave_roll;
   delay(100);
-  Serial.print(" \tRoll: "); Serial.print(ave_roll);
+  //Serial.print(" \tRoll: "); Serial.print(ave_pitch);
   Serial.print(" \tDist: "); Serial.println(ave_dist);
   Serial.println();
 }
