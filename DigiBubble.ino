@@ -29,17 +29,28 @@ const int numaves = 16;
 struct orient level;
 
 // Define variables to store values
+// Full array of values
 int distance[numaves];
 float roll[numaves];
 float pitch[numaves];
-float outputs[3];
+
+// Running total of values
 float tot_dist = 0;
 float tot_pitch = 0;
 float tot_roll = 0;
+
+// Average values
 float ave_pitch;
 float ave_roll;
 float ave_dist;
-int readIndex;
+
+// Array to latest pitch, roll and dist values
+float outputs[3];
+const char *OutputMsg[] = {"Distance: ", "Pitch: ", "Roll: "};
+
+// Loop counter variable
+int readIndex = 0;
+int measchoice = 2;
 
 void setup(void) {
 #ifndef ESP8266
@@ -115,7 +126,8 @@ void loop() {
   outputs[1] = ave_pitch;
   outputs[2] = ave_roll;
   delay(100);
-  //Serial.print(" \tRoll: "); Serial.print(ave_pitch);
-  Serial.print(" \tDist: "); Serial.println(ave_dist);
+  Serial.print(OutputMsg[measchoice]); Serial.print(outputs[measchoice]);
+//  Serial.print(" \tRoll: "); Serial.print(ave_pitch);
+//  Serial.print(" \tDist: "); Serial.println(ave_dist);
   Serial.println();
 }
