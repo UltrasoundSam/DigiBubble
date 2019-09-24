@@ -50,7 +50,11 @@ const char *OutputMsg[] = {"Distance: ", "Pitch: ", "Roll: "};
 
 // Loop counter variable
 int readIndex = 0;
-int measchoice = 2;
+
+// Defining constants for tap detection
+#define CLICKTHRESHHOLD 80
+const byte interruptPin = 2;
+volatile int measchoice = 2;
 
 void setup(void) {
 #ifndef ESP8266
@@ -74,6 +78,17 @@ void setup(void) {
   IRToF.setTimeout(500);
   IRToF.setMeasurementTimingBudget(2000);
 
+  // Set up tap detection
+  // 0 = turn off click detection & interrupt
+  // 1 = single click only interrupt output
+  // 2 = double click only interrupt output, detect single click
+  // Adjust threshhold, higher numbers are less sensitive
+  lis.setClick(2, CLICKTHRESHHOLD);
+
+  // Attach interrupt to tap
+  pinMode(interruptPin, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(interruptPin), changemeasure, RISING);
+
   // Initialise all measurements to zero
   for (int thisReading = 0; thisReading < numaves; thisReading++) {
     distance[thisReading] = 0;
@@ -88,6 +103,13 @@ struct orient alignments(float accx, float accy, float accz){
   alignment.roll = asin(accy / accz) * radtoang;
   alignment.pitch = asin(accx / accz) * radtoang;
   return alignment;
+}
+
+
+// ISR to change what measurement value is displayed to screen
+void changemeasure() {
+  measchoice++;
+  measchoice = measchoice % 3;
 }
 
 void loop() {
@@ -122,10 +144,11 @@ void loop() {
   if (readIndex >= numaves) {
     readIndex = 0;
   }
+  
   outputs[0] = ave_dist;
   outputs[1] = ave_pitch;
   outputs[2] = ave_roll;
-  delay(100);
+
   Serial.print(OutputMsg[measchoice]); Serial.print(outputs[measchoice]);
 //  Serial.print(" \tRoll: "); Serial.print(ave_pitch);
 //  Serial.print(" \tDist: "); Serial.println(ave_dist);
