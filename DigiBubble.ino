@@ -1,10 +1,15 @@
-// Basic demo for accelerometer readings from Adafruit LIS3DH
+// Code for running Digibubble and display
 
 #include <Wire.h>
 #include <SPI.h>
 #include <VL53L0X.h>
 #include <Adafruit_LIS3DH.h>
 #include <Adafruit_Sensor.h>
+#include <Adafruit_SSD1306.h>
+
+// Define Display constants
+#define SCREEN_WIDTH 128 // OLED display width, in pixels
+#define SCREEN_HEIGHT 32 // OLED display height, in pixels
 
 // Used for software SPI
 #define LIS3DH_CLK 13
@@ -16,6 +21,12 @@
 Adafruit_LIS3DH lis = Adafruit_LIS3DH(LIS3DH_CS, LIS3DH_MOSI, LIS3DH_MISO, LIS3DH_CLK);
 // Create VL53L0X (distance) object
 VL53L0X IRToF;
+
+// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
+#define OLED_RESET     4 // Reset pin # (or -1 if sharing Arduino reset pin)
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+// OLED display TWI address
+#define OLED_ADDR   0x3C
 
 // Defining a struct for saving roll and pitch
 struct orient {
@@ -60,10 +71,21 @@ void setup(void) {
 #ifndef ESP8266
   while (!Serial);     // will pause Zero, Leonardo, etc until serial console opens
 #endif
-
   Serial.begin(9600);
   Wire.begin();
   Serial.println("LIS3DH test!");
+
+  // initialize and clear display
+  display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR);
+  display.clearDisplay();
+  display.display();
+
+  // display a line of text
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(27,15);
+  display.print("LIS3DH test!");
+  display.display();
   
   if (! lis.begin(0x18)) {   // change this to 0x19 for alternative i2c address
     Serial.println("Couldnt start");
@@ -112,6 +134,14 @@ void changemeasure() {
   measchoice = measchoice % 3;
 }
 
+void changedisplay(){
+  display.clearDisplay();
+  display.setCursor(27,4);
+  display.print(OutputMsg[measchoice]);
+  display.setCursor(27,20);
+  display.print(outputs[measchoice]);
+  display.display();
+}
 void loop() {
   lis.read();      // get X Y and Z data at once
 
@@ -149,8 +179,13 @@ void loop() {
   outputs[1] = ave_pitch;
   outputs[2] = ave_roll;
 
+  delay(100);
   Serial.print(OutputMsg[measchoice]); Serial.print(outputs[measchoice]);
 //  Serial.print(" \tRoll: "); Serial.print(ave_pitch);
 //  Serial.print(" \tDist: "); Serial.println(ave_dist);
   Serial.println();
+
+  // display a line of text
+  changedisplay();
+
 }
